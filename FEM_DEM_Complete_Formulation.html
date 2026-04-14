@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FEM & DEM Complete Formulations</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --card: #1c2028;
+    --border: rgba(255,255,255,0.08);
+    --accent: #4ade80;
+    --accent2: #60a5fa;
+    --accent3: #f59e0b;
+    --accent4: #c084fc;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --code-bg: #0a0c10;
+    --success: #4ade80;
+    --info: #60a5fa;
+    --warn: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0d0f14 0%, #111827 50%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 40px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(74,222,128,0.06) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.25);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 2.2rem;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--muted); font-size: 14px; max-width: 560px; }
+
+  .nav-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 14px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .content { padding: 32px 40px; max-width: 1100px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  .section-subtitle { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title::before {
+    content: '';
+    width: 3px; height: 14px;
+    background: var(--accent);
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  @media(max-width: 800px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  .formula-box {
+    background: var(--code-bg);
+    border: 1px solid rgba(96,165,250,0.2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--accent2);
+    margin: 12px 0;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.8;
+  }
+  .formula-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .step-list { list-style: none; counter-reset: steps; }
+  .step-list li {
+    counter-increment: steps;
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+  }
+  .step-list li::before {
+    content: counter(steps);
+    min-width: 28px; height: 28px;
+    background: rgba(74,222,128,0.12);
+    border: 1px solid rgba(74,222,128,0.3);
+    color: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-title { font-weight: 600; margin-bottom: 4px; }
+  .step-desc { color: var(--muted); font-size: 14px; }
+
+  canvas { display: block; }
+
+  .diagram-wrap {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    position: relative;
+  }
+  .diagram-caption {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+    font-style: italic;
+  }
+
+  .matrix-display {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    overflow-x: auto;
+    color: var(--accent2);
+    line-height: 2;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .badge-green { background: rgba(74,222,128,0.1); color: var(--accent); border: 1px solid rgba(74,222,128,0.25); }
+  .badge-blue { background: rgba(96,165,250,0.1); color: var(--accent2); border: 1px solid rgba(96,165,250,0.25); }
+  .badge-amber { background: rgba(245,158,11,0.1); color: var(--accent3); border: 1px solid rgba(245,158,11,0.25); }
+  .badge-purple { background: rgba(192,132,252,0.1); color: var(--accent4); border: 1px solid rgba(192,132,252,0.25); }
+
+  .highlight-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .highlight-item {
+    flex: 1;
+    min-width: 160px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .highlight-item .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .highlight-item .value { font-size: 18px; font-weight: 600; }
+
+  .dem-particle-viz {
+    position: relative;
+    width: 100%;
+    height: 300px;
+  }
+  #dem-canvas {
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-row .icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .info-row .text { flex: 1; }
+  .info-row .text strong { display: block; font-size: 13px; margin-bottom: 2px; }
+  .info-row .text span { font-size: 13px; color: var(--muted); }
+
+  .btn {
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.3);
+    color: var(--accent);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn:hover { background: rgba(74,222,128,0.2); }
+  .btn-blue {
+    background: rgba(96,165,250,0.1);
+    border-color: rgba(96,165,250,0.3);
+    color: var(--accent2);
+  }
+  .btn-blue:hover { background: rgba(96,165,250,0.2); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: var(--surface);
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 11px;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { font-weight: 500; color: var(--accent2); }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .compare-cell {
+    background: var(--card);
+    padding: 18px 20px;
+  }
+  .compare-header {
+    background: var(--surface);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .compare-header.tri { color: var(--accent3); }
+  .compare-header.quad { color: var(--accent2); }
+  .compare-header.dem { color: var(--accent4); }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-badge">Assignment Reference</div>
+  <h1>FEM & DEM <span>Complete Formulations</span></h1>
+  <p>Triangular elements · Quadrilateral elements · Discrete Element Method — with worked matrices, shape functions, and visual derivations.</p>
+</div>
+
+<nav class="nav-tabs">
+  <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+  <button class="tab-btn" onclick="switchTab('cst')">CST (Triangular)</button>
+  <button class="tab-btn" onclick="switchTab('quad')">Quad Elements</button>
+  <button class="tab-btn" onclick="switchTab('assembly')">Assembly & BCs</button>
+  <button class="tab-btn" onclick="switchTab('dem')">DEM Formulation</button>
+  <button class="tab-btn" onclick="switchTab('compare')">FEM vs DEM</button>
+</nav>
+
+<!-- ===== OVERVIEW ===== -->
+<div class="content">
+<div id="tab-overview" class="section active">
+  <div class="section-title">FEM & DEM — Core Formulation Steps</div>
+  <div class="section-subtitle">From your professor's notes, extended with full mathematical formulations for 2D elements.</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">FEM Core Steps</div>
+      <ol class="step-list">
+        <li><div><div class="step-title">Discretization (Meshing)</div><div class="step-desc">Divide geometry into triangular or quadrilateral elements connected at nodes.</div></div></li>
+        <li><div><div class="step-title">Shape Functions</div><div class="step-desc">Interpolation functions N(x,y) relating field variable to nodal values.</div></div></li>
+        <li><div><div class="step-title">Element Stiffness Matrix</div><div class="step-desc">k<sub>e</sub> = ∫ Bᵀ D B dV — using strain-displacement and constitutive matrices.</div></div></li>
+        <li><div><div class="step-title">Global Assembly</div><div class="step-desc">Assemble K<sub>global</sub> from all element matrices by node connectivity.</div></div></li>
+        <li><div><div class="step-title">Boundary Conditions</div><div class="step-desc">Apply essential (Dirichlet) and natural (Neumann) BCs.</div></div></li>
+        <li><div><div class="step-title">Solve System</div><div class="step-desc">K·u = F → u (nodal displacements) via Gaussian elimination.</div></div></li>
+        <li><div><div class="step-title">Post-processing</div><div class="step-desc">Compute strains ε = B·u, stresses σ = D·ε.</div></div></li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-title">DEM Core Steps</div>
+      <ol class="step-list">
+        <li><div><div class="step-title">Particle Initialization</div><div class="step-desc">Set positions, radii, mass, velocity = 0, material properties.</div></div></li>
+        <li><div><div class="step-title">Contact Detection</div><div class="step-desc">Check distance d &lt; r<sub>i</sub> + r<sub>j</sub> for all particle pairs.</div></div></li>
+        <li><div><div class="step-title">Force Calculation</div><div class="step-desc">Linear spring: F<sub>n</sub> = k<sub>n</sub>·δ — Dashpot: F<sub>d</sub> = γ·v<sub>n</sub>.</div></div></li>
+        <li><div><div class="step-title">Body Forces</div><div class="step-desc">Apply gravity: F<sub>g</sub> = m·g in −y direction.</div></div></li>
+        <li><div><div class="step-title">Time Integration</div><div class="step-desc">Euler-Cromer (symplectic): v += (F/m)·dt, x += v·dt.</div></div></li>
+        <li><div><div class="step-title">Boundary Enforcement</div><div class="step-desc">Wall contact forces with spring-dashpot model.</div></div></li>
+        <li><div><div class="step-title">Visualization</div><div class="step-desc">Plot particle positions, contact networks, force chains.</div></div></li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Element Type Comparison</div>
+    <table>
+      <tr>
+        <th>Property</th>
+        <th>1D Bar</th>
+        <th>CST Triangle (2D)</th>
+        <th>Bilinear Quad (2D)</th>
+      </tr>
+      <tr>
+        <td>Nodes</td>
+        <td>2</td>
+        <td>3</td>
+        <td>4</td>
+      </tr>
+      <tr>
+        <td>DOF per element</td>
+        <td>2 (u)</td>
+        <td>6 (u,v per node)</td>
+        <td>8 (u,v per node)</td>
+      </tr>
+      <tr>
+        <td>Shape functions</td>
+        <td>Linear N₁, N₂</td>
+        <td>Linear N₁, N₂, N₃ (barycentric)</td>
+        <td>Bilinear in ξ,η (isoparametric)</td>
+      </tr>
+      <tr>
+        <td>Strain state</td>
+        <td>Constant</td>
+        <td>Constant Strain (CST)</td>
+        <td>Linearly varying</td>
+      </tr>
+      <tr>
+        <td>Stiffness matrix size</td>
+        <td>2×2</td>
+        <td>6×6</td>
+        <td>8×8</td>
+      </tr>
+      <tr>
+        <td>Integration</td>
+        <td>Exact</td>
+        <td>Exact (area coords)</td>
+        <td>Gauss quadrature needed</td>
+      </tr>
+      <tr>
+        <td>Accuracy</td>
+        <td>Exact for linear</td>
+        <td>Lower (const strain)</td>
+        <td>Higher, flexible geometry</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== CST TRIANGULAR ===== -->
+<div id="tab-cst" class="section">
+  <div class="section-title">CST — Constant Strain Triangle</div>
+  <div class="section-subtitle">3-node linear triangular element for 2D plane stress / plane strain problems.</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Element Geometry</div>
+      <div class="diagram-wrap">
+        <canvas id="cst-canvas" width="340" height="220"></canvas>
+        <div class="diagram-caption">CST element with 3 nodes: (x₁,y₁), (x₂,y₂), (x₃,y₃). Each node has DOFs u (x-disp) and v (y-disp).</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Shape Functions (Area Coordinates)</div>
+      <div class="formula-label">Natural / Barycentric coordinates</div>
+      <div class="formula-box">N₁ = (a₁ + b₁x + c₁y) / (2A)
+N₂ = (a₂ + b₂x + c₂y) / (2A)
+N₃ = (a₃ + b₃x + c₃y) / (2A)
+
+Where:
+  a₁ = x₂y₃ - x₃y₂
+  b₁ = y₂ - y₃
+  c₁ = x₃ - x₂
+  (cyclic permutations for a₂,b₂,c₂,a₃,b₃,c₃)
+
+2A = det|1 x₁ y₁|
+        |1 x₂ y₂|
+        |1 x₃ y₃|</div>
+      <div style="margin-top:12px;">
+        <div class="formula-label">Partition of unity condition:</div>
+        <div class="formula-box">N₁ + N₂ + N₃ = 1  (always)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Displacement Field</div>
+    <p style="color:var(--muted); font-size:14px; margin-bottom:12px;">The displacement at any interior point (x,y) interpolated from nodal values:</p>
+    <div class="formula-box">u(x,y) = N₁·u₁ + N₂·u₂ + N₃·u₃
+v(x,y) = N₁·v₁ + N₂·v₂ + N₃·v₃
+
+In matrix form:
+{u}   [N₁  0  N₂  0  N₃  0 ] {u₁}
+{v} = [ 0 N₁   0 N₂   0 N₃] {v₁}
+                               {u₂}
+                               {v₂}   →  {d} = [N]{δₑ}
+                               {u₃}
+                               {v₃}
+
+DOF vector: {δₑ} = [u₁ v₁ u₂ v₂ u₃ v₃]ᵀ</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Strain-Displacement Matrix [B]</div>
+      <p style="color:var(--muted); font-size:14px; margin-bottom:12px;">For plane stress/strain, 3 strain components:</p>
+      <div class="formula-box">{ε} = [εₓ εᵧ γₓᵧ]ᵀ = [B]{δₑ}
+
+[B] = 1/(2A) ·
+  [b₁   0  b₂   0  b₃   0 ]
+  [ 0  c₁   0  c₂   0  c₃ ]
+  [c₁  b₁  c₂  b₂  c₃  b₃ ]
+
+Note: B is CONSTANT → Constant Strain Triangle!
+Strains are uniform throughout the element.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Constitutive Matrix [D]</div>
+      <div class="formula-label">Plane Stress (thin plate, σz=0):</div>
+      <div class="formula-box">[D] = E/(1-ν²) ·
+  [1    ν     0      ]
+  [ν    1     0      ]
+  [0    0   (1-ν)/2  ]</div>
+      <div class="formula-label" style="margin-top:12px;">Plane Strain (thick body, εz=0):</div>
+      <div class="formula-box">[D] = E/((1+ν)(1-2ν)) ·
+  [1-ν   ν    0        ]
+  [ ν   1-ν   0        ]
+  [ 0    0   (1-2ν)/2  ]</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Element Stiffness Matrix [kₑ]</div>
+    <div class="formula-box">kₑ = ∫∫ [B]ᵀ [D] [B] dA · t    (where t = thickness)
+
+For CST, B is constant, so integration is trivial:
+kₑ = [B]ᵀ [D] [B] · A · t
+
+This is a 6×6 symmetric matrix:
+
+     u₁    v₁    u₂    v₂    u₃    v₃
+u₁ [k₁₁  k₁₂  k₁₃  k₁₄  k₁₅  k₁₆]
+v₁ [k₂₁  k₂₂  k₂₃  k₂₄  k₂₅  k₂₆]
+u₂ [k₃₁  k₃₂  k₃₃  k₃₄  k₃₅  k₃₆]
+v₂ [k₄₁  k₄₂  k₄₃  k₄₄  k₄₅  k₄₆]
+u₃ [k₅₁  k₅₂  k₅₃  k₅₄  k₅₅  k₅₆]
+v₃ [k₆₁  k₆₂  k₆₃  k₆₄  k₆₅  k₆₆]
+
+kᵢⱼ entries computed as: kᵢⱼ = Σ BᵢₖDₖₗBⱼₗ · A · t</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Stress Recovery (Post-processing)</div>
+    <div class="formula-box">After solving: {σ} = [D][B]{δₑ}
+
+{σ} = [σₓ  σᵧ  τₓᵧ]ᵀ  — same everywhere in CST element!
+
+Von Mises stress:
+σ_vm = √(σₓ² - σₓσᵧ + σᵧ² + 3τₓᵧ²)
+
+Principal stresses:
+σ₁,₂ = (σₓ+σᵧ)/2 ± √((σₓ-σᵧ)²/4 + τₓᵧ²)</div>
+  </div>
+</div>
+
+<!-- ===== QUAD ELEMENT ===== -->
+<div id="tab-quad" class="section">
+  <div class="section-title">Bilinear Quadrilateral Element (Q4)</div>
+  <div class="section-subtitle">4-node isoparametric element using natural coordinates (ξ, η) ∈ [−1, 1].</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Isoparametric Mapping</div>
+      <div class="diagram-wrap">
+        <canvas id="quad-canvas" width="340" height="220"></canvas>
+        <div class="diagram-caption">Parent element in (ξ,η) space mapped to physical (x,y) space via Jacobian.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Shape Functions in Natural Coordinates</div>
+      <div class="formula-box">Defined over ξ ∈ [-1,1], η ∈ [-1,1]:
+
+N₁(ξ,η) = ¼(1-ξ)(1-η)   → node 1 (-1,-1)
+N₂(ξ,η) = ¼(1+ξ)(1-η)   → node 2 (+1,-1)
+N₃(ξ,η) = ¼(1+ξ)(1+η)   → node 3 (+1,+1)
+N₄(ξ,η) = ¼(1-ξ)(1+η)   → node 4 (-1,+1)
+
+Isoparametric concept:
+x = Σ Nᵢ·xᵢ   (same functions for geometry)
+y = Σ Nᵢ·yᵢ
+u = Σ Nᵢ·uᵢ   (and for displacements)
+v = Σ Nᵢ·vᵢ</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Jacobian Matrix — Coordinate Transformation</div>
+    <p style="color:var(--muted); font-size:14px; margin-bottom:12px;">Maps derivatives from natural to physical space. Critical for non-rectangular elements.</p>
+    <div class="formula-box">[J] = [∂x/∂ξ  ∂y/∂ξ]   =  Σᵢ [∂Nᵢ/∂ξ · xᵢ    ∂Nᵢ/∂ξ · yᵢ]
+      [∂x/∂η  ∂y/∂η]         [∂Nᵢ/∂η · xᵢ    ∂Nᵢ/∂η · yᵢ]
+
+det(J) must be > 0 everywhere (element validity condition)
+
+Inverse mapping (for B matrix computation):
+[∂Nᵢ/∂x]   [J]⁻¹  [∂Nᵢ/∂ξ]
+[∂Nᵢ/∂y] =        [∂Nᵢ/∂η]</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Strain-Displacement Matrix [B] for Q4</div>
+      <div class="formula-box">[B] is 3×8 matrix (varies with ξ,η):
+
+     u₁  v₁  u₂  v₂  u₃  v₃  u₄  v₄
+εₓ: [∂N₁/∂x   0   ∂N₂/∂x  0  ...]
+εᵧ: [  0  ∂N₁/∂y    0  ∂N₂/∂y ...]
+γ:  [∂N₁/∂y ∂N₁/∂x ∂N₂/∂y ∂N₂/∂x...]
+
+Where ∂Nᵢ/∂x = J⁻¹[1,1]·∂Nᵢ/∂ξ + J⁻¹[1,2]·∂Nᵢ/∂η</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Stiffness Matrix by Gauss Quadrature</div>
+      <div class="formula-box">kₑ = ∫₋₁¹∫₋₁¹ [B]ᵀ[D][B] |J| t dξ dη
+
+Numerical integration (2×2 Gauss rule):
+kₑ ≈ Σᵢ Σⱼ wᵢwⱼ · [B(ξᵢ,ηⱼ)]ᵀ[D][B(ξᵢ,ηⱼ)]·|J|·t
+
+Gauss points & weights (2×2):
+Point  ξ       η      weight
+1     -1/√3  -1/√3    1.0
+2     +1/√3  -1/√3    1.0
+3     +1/√3  +1/√3    1.0
+4     -1/√3  +1/√3    1.0</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Full Q4 Stiffness Matrix Structure (8×8)</div>
+    <div class="matrix-display">
+     u₁    v₁    u₂    v₂    u₃    v₃    u₄    v₄
+u₁ [K₁₁  K₁₂  K₁₃  K₁₄  K₁₅  K₁₆  K₁₇  K₁₈]
+v₁ [K₂₁  K₂₂  K₂₃  K₂₄  K₂₅  K₂₆  K₂₇  K₂₈]
+u₂ [K₃₁  K₃₂  K₃₃  K₃₄  K₃₅  K₃₆  K₃₇  K₃₈]
+v₂ [K₄₁  K₄₂  K₄₃  K₄₄  K₄₅  K₄₆  K₄₇  K₄₈]
+u₃ [K₅₁  K₅₂  K₅₃  K₅₄  K₅₅  K₅₆  K₅₇  K₅₈]
+v₃ [K₆₁  K₆₂  K₆₃  K₆₄  K₆₅  K₆₆  K₆₇  K₆₈]
+u₄ [K₇₁  K₇₂  K₇₃  K₇₄  K₇₅  K₇₆  K₇₇  K₇₈]
+v₄ [K₈₁  K₈₂  K₈₃  K₈₄  K₈₅  K₈₆  K₈₇  K₈₈]
+
+Symmetric: Kᵢⱼ = Kⱼᵢ  |  Kᵢⱼ = Σ_gp wgp · Bᵢ(ξ,η)ᵀ D Bⱼ(ξ,η) |J| t</div>
+  </div>
+</div>
+
+<!-- ===== ASSEMBLY & BCs ===== -->
+<div id="tab-assembly" class="section">
+  <div class="section-title">Global Assembly & Boundary Conditions</div>
+  <div class="section-subtitle">How element matrices combine into the global system, and how BCs are applied.</div>
+
+  <div class="card">
+    <div class="card-title">Global Stiffness Matrix Assembly</div>
+    <div class="formula-box">Algorithm:
+1. Initialize: [K_global] = 0  (size: n_dof × n_dof)
+
+2. For each element e:
+   a. Compute [kₑ] (local stiffness, size: ndof_e × ndof_e)
+   b. Identify global DOF indices for each local DOF
+      (connectivity table: element → global node numbers)
+   c. Add: K_global[global_i, global_j] += kₑ[local_i, local_j]
+      (for all i,j in element DOF pairs)
+
+For 2D problems with n nodes:
+  - Total DOFs = 2n  (u and v at each node)
+  - K_global is (2n × 2n) symmetric, sparse, positive semi-definite
+
+Assembly in Python (using numpy ix_):
+K[np.ix_(global_dofs, global_dofs)] += k_local</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Essential BCs (Displacement)</div>
+      <div class="formula-box">Method 1 — Row/Column Elimination:
+Strike the row and column of the fixed DOF.
+Move contributions to RHS {F}.
+
+Method 2 — Large Number (Penalty):
+K[i,i] += α  (α >> max(K entries))
+F[i]    = α · ū    (ū = prescribed disp.)
+
+Method 3 — Lagrange Multipliers:
+[K    cᵀ][u] = [F]
+[c    0 ][λ]   [g]
+(adds λ = constraint force as unknowns)</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Natural BCs (Traction / Load)</div>
+      <div class="formula-box">Distributed surface traction on edge:
+fₑ = ∫_Γ [N]ᵀ {t} dΓ
+
+For CST edge (nodes i,j, traction tₓ,tᵧ):
+fᵢₓ = (tₓ · Lᵢⱼ · t) / 2
+fᵢᵧ = (tᵧ · Lᵢⱼ · t) / 2
+fⱼₓ = fᵢₓ   (equal sharing for linear elem.)
+fⱼᵧ = fᵢᵧ
+
+Body force vector:
+fᵦ = ∫∫ [N]ᵀ {b} dA  (e.g. gravity {0, -ρg})</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Global System and Solution</div>
+    <div class="formula-box">Global FEM system:
+[K_global] {U} = {F}
+
+Where:
+  [K] = n_dof × n_dof symmetric positive definite (after BCs)
+  {U} = vector of ALL nodal DOFs (unknowns)
+  {F} = external force vector (applied + reactions)
+
+Partition into free (f) and constrained (c) DOFs:
+[Kff  Kfc][Uf]   [Ff]
+[Kcf  Kcc][Uc] = [Fc]
+
+Free DOFs (what we solve for):
+[Kff]{Uf} = {Ff} - [Kfc]{Uc}
+
+Solution methods:
+  • Direct: Gaussian elimination, LU decomposition, Cholesky
+  • Iterative: Conjugate Gradient (large sparse systems)
+  
+In Python:
+U_free = np.linalg.solve(K_reduced, F_reduced)</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Complete Python Workflow — 2D CST Example</div>
+    <div class="formula-box">import numpy as np
+
+def cst_stiffness(coords, E, nu, t, mode='plane_stress'):
+    x1,y1, x2,y2, x3,y3 = coords.flatten()
+    A = 0.5*abs((x2-x1)*(y3-y1) - (x3-x1)*(y2-y1))
+    b1=y2-y3; b2=y3-y1; b3=y1-y2
+    c1=x3-x2; c2=x1-x3; c3=x2-x1
+    B = (1/(2*A)) * np.array([
+        [b1,  0, b2,  0, b3,  0],
+        [ 0, c1,  0, c2,  0, c3],
+        [c1, b1, c2, b2, c3, b3]])
+    if mode == 'plane_stress':
+        D = (E/(1-nu**2))*np.array(
+            [[1,nu,0],[nu,1,0],[0,0,(1-nu)/2]])
+    else:  # plane_strain
+        D = (E/((1+nu)*(1-2*nu)))*np.array(
+            [[1-nu,nu,0],[nu,1-nu,0],[0,0,(1-2*nu)/2]])
+    k = B.T @ D @ B * A * t
+    return k, B, D
+
+# Global assembly
+K = np.zeros((n_dof, n_dof))
+for el in elements:
+    dofs = get_dofs(el)   # [u1,v1,u2,v2,...] indices
+    k_e,_,_ = cst_stiffness(node_coords[el], E, nu, t)
+    K[np.ix_(dofs, dofs)] += k_e
+
+# Apply BCs and solve
+K_red = K[np.ix_(free_dofs, free_dofs)]
+F_red = F[free_dofs] - K[np.ix_(free_dofs, fixed_dofs)] @ u_fixed
+U_free = np.linalg.solve(K_red, F_red)</div>
+  </div>
+</div>
+
+<!-- ===== DEM FORMULATION ===== -->
+<div id="tab-dem" class="section">
+  <div class="section-title">DEM — Distinct Element Method</div>
+  <div class="section-subtitle">Complete formulation with contact mechanics, force models, and time integration schemes.</div>
+
+  <div class="card">
+    <div class="card-title">DEM Governing Physics</div>
+    <div class="formula-box">Newton's 2nd Law for each particle i:
+
+Translational:  m_i · ẍᵢ = Σⱼ Fᵢⱼᶜ + Fᵢᵍ + Fᵢᵉˣᵗ
+Rotational:     I_i · θ̈ᵢ = Σⱼ Mᵢⱼ
+
+Where:
+  m_i = ⁴⁄₃ π r³ ρ          (sphere mass)
+  I_i = ²⁄₅ m_i r²          (moment of inertia)
+  Fᵢⱼᶜ = contact force from particle j on i
+  Fᵢᵍ  = gravity = m·g (downward)
+  Mᵢⱼ  = torque from tangential contact forces</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Contact Detection</div>
+      <div class="formula-box">Step 1: Check overlap for pair (i,j):
+
+dᵢⱼ = |xⱼ - xᵢ|  (distance between centers)
+δ   = rᵢ + rⱼ - dᵢⱼ   (overlap / penetration)
+
+Contact exists if δ > 0
+
+Unit normal vector (i→j):
+n̂ᵢⱼ = (xⱼ - xᵢ) / dᵢⱼ
+
+Normal relative velocity:
+vₙ = (vⱼ - vᵢ) · n̂ᵢⱼ</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Contact Force Models</div>
+      <div class="formula-box">1. Linear Spring-Dashpot (LSD):
+Fₙ = kₙ·δ - γₙ·vₙ   (normal)
+Fₜ = -kₜ·δₜ - γₜ·vₜ  (tangential)
+
+2. Hertz-Mindlin (nonlinear):
+Fₙ = (4/3)E*√(R*)·δ^(3/2)
+  E* = combined Young's modulus
+  R* = rᵢrⱼ/(rᵢ+rⱼ)  (effective radius)
+
+3. Coulomb friction limit:
+|Fₜ| ≤ μ·|Fₙ|  (sliding condition)
+If exceeded: Fₜ = μ·|Fₙ|·sign(vₜ)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Time Integration Schemes</div>
+    <div class="formula-box">1. Euler-Cromer (Symplectic Euler) — from your code:
+   vᵢ(t+dt) = vᵢ(t) + aᵢ(t)·dt       ← update velocity first
+   xᵢ(t+dt) = xᵢ(t) + vᵢ(t+dt)·dt    ← use NEW velocity
+
+   Better energy conservation than standard Euler.
+
+2. Velocity Verlet (most common in DEM):
+   xᵢ(t+dt) = xᵢ(t) + vᵢ(t)·dt + ½aᵢ(t)·dt²
+   aᵢ(t+dt) = Fᵢ(t+dt) / mᵢ           ← recalculate forces
+   vᵢ(t+dt) = vᵢ(t) + ½[aᵢ(t)+aᵢ(t+dt)]·dt
+
+3. Critical time step (stability):
+   dt_cr = 2/ωmax ≈ 2√(m_min/k_max)    ← must not exceed this!
+   Use dt ≈ 0.2 · dt_cr for safety.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Wall Boundary Conditions</div>
+    <div class="formula-box">For a wall at y = 0 (bottom boundary):
+
+  δ_wall = rᵢ - yᵢ   (overlap with wall)
+  if δ_wall > 0:
+    Fwall_y = kₙ·δ_wall - γₙ·vᵢᵧ    (repulsive spring-dashpot)
+    forces[i, 1] += Fwall_y
+
+For side walls at x = 0 and x = L:
+  Left:   if xᵢ < rᵢ   → F_x = +kₙ(rᵢ-xᵢ) - γₙ·vᵢₓ
+  Right:  if xᵢ > L-rᵢ → F_x = -kₙ(xᵢ-(L-rᵢ)) - γₙ·vᵢₓ
+
+Alternative (simpler, from your code): np.clip positions to keep 
+particles inside domain — but loses momentum continuity.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Live DEM Simulation — Spring-Dashpot Model</div>
+    <div class="dem-particle-viz">
+      <canvas id="dem-canvas" width="680" height="280" style="width:100%; border-radius:8px; background:#0a0c10;"></canvas>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+      <button class="btn" onclick="resetDEM()">Reset Simulation</button>
+      <button class="btn btn-blue" onclick="toggleGravity()">Toggle Gravity</button>
+      <span style="color:var(--muted); font-size:13px; align-self:center;">Click canvas to add a particle</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== COMPARE ===== -->
+<div id="tab-compare" class="section">
+  <div class="section-title">FEM vs DEM — Comparative Analysis</div>
+  <div class="section-subtitle">When to use which method, mathematical differences, and computational aspects.</div>
+
+  <div class="compare-grid" style="margin-bottom:20px;">
+    <div class="compare-header tri">FEM (Finite Element Method)</div>
+    <div class="compare-header quad">DEM (Distinct Element Method)</div>
+    <div class="compare-cell">
+      <strong>Continuous media</strong><br>
+      <span style="color:var(--muted); font-size:13px;">Solids, structures, fluids treated as continuum. Material properties (E, ν) are bulk averages.</span>
+    </div>
+    <div class="compare-cell">
+      <strong>Discontinuous media</strong><br>
+      <span style="color:var(--muted); font-size:13px;">Individual particles, grains, rocks. Each particle tracked independently.</span>
+    </div>
+    <div class="compare-cell">
+      <strong>Governing equation:</strong><br>
+      <code style="font-size:12px; color:var(--accent2);">[K]{U} = {F}  (static)<br>[M]{Ü}+[C]{U̇}+[K]{U}={F} (dynamic)</code>
+    </div>
+    <div class="compare-cell">
+      <strong>Governing equation:</strong><br>
+      <code style="font-size:12px; color:var(--accent4);">mẍᵢ = ΣFᵢⱼᶜ + Fᵍ  (per particle)<br>Iθ̈ᵢ = ΣMᵢⱼ  (rotation)</code>
+    </div>
+    <div class="compare-cell">
+      <strong>DOFs:</strong> Nodal displacements<br>
+      <span style="color:var(--muted); font-size:13px;">Fixed mesh topology throughout</span>
+    </div>
+    <div class="compare-cell">
+      <strong>DOFs:</strong> Particle positions + velocities<br>
+      <span style="color:var(--muted); font-size:13px;">Contact topology changes every step</span>
+    </div>
+    <div class="compare-cell">
+      <strong>Time integration:</strong> Implicit or explicit<br>
+      <span style="color:var(--muted); font-size:13px;">Newmark-β, HHT (unconditionally stable options)</span>
+    </div>
+    <div class="compare-cell">
+      <strong>Time integration:</strong> Always explicit<br>
+      <span style="color:var(--muted); font-size:13px;">Verlet / Euler-Cromer. Conditionally stable (small dt required)</span>
+    </div>
+    <div class="compare-cell">
+      <strong>Meshing:</strong> Triangular, quad, tetrahedral<br>
+      <span style="color:var(--muted); font-size:13px;">Mesh quality affects accuracy significantly</span>
+    </div>
+    <div class="compare-cell">
+      <strong>Particles:</strong> Spheres, discs, polyhedra<br>
+      <span style="color:var(--muted); font-size:13px;">No mesh — contact network is geometry</span>
+    </div>
+    <div class="compare-cell">
+      <strong>Best for:</strong>
+      <div class="tag-row">
+        <span class="badge badge-green">Structural analysis</span>
+        <span class="badge badge-green">Heat transfer</span>
+        <span class="badge badge-green">Fluid mechanics</span>
+        <span class="badge badge-green">Elasticity/Plasticity</span>
+      </div>
+    </div>
+    <div class="compare-cell">
+      <strong>Best for:</strong>
+      <div class="tag-row">
+        <span class="badge badge-purple">Granular flow</span>
+        <span class="badge badge-purple">Slope stability</span>
+        <span class="badge badge-purple">Rock mechanics</span>
+        <span class="badge badge-purple">Powder mixing</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">CST vs Q4 — Triangular vs Quadrilateral</div>
+    <div class="compare-grid">
+      <div class="compare-header tri">CST Triangular</div>
+      <div class="compare-header quad">Q4 Quadrilateral</div>
+      <div class="compare-cell">
+        Constant strain within element<br>
+        <span style="color:var(--muted);font-size:13px;">Stress jumps at element boundaries (smoothing needed)</span>
+      </div>
+      <div class="compare-cell">
+        Linearly varying strain<br>
+        <span style="color:var(--muted);font-size:13px;">More accurate stress distribution, smoother gradients</span>
+      </div>
+      <div class="compare-cell">
+        <strong>6×6</strong> stiffness matrix<br>
+        <span style="color:var(--muted);font-size:13px;">Simpler, faster per-element</span>
+      </div>
+      <div class="compare-cell">
+        <strong>8×8</strong> stiffness matrix<br>
+        <span style="color:var(--muted);font-size:13px;">Gauss quadrature required (2×2 typically)</span>
+      </div>
+      <div class="compare-cell">
+        Exact integration using area coords<br>
+        <span style="color:var(--muted);font-size:13px;">No numerical integration error</span>
+      </div>
+      <div class="compare-cell">
+        Numerical Gauss quadrature<br>
+        <span style="color:var(--muted);font-size:13px;">2×2 rule is exact for bilinear fields</span>
+      </div>
+      <div class="compare-cell">
+        Fits complex geometry easily<br>
+        <span style="color:var(--muted);font-size:13px;">Triangulation auto-meshing available</span>
+      </div>
+      <div class="compare-cell">
+        Better for structured domains<br>
+        <span style="color:var(--muted);font-size:13px;">Isoparametric mapping handles distorted quads</span>
+      </div>
+      <div class="compare-cell">
+        <span style="color:var(--warn);">Overly stiff</span> ("locking") for nearly incompressible materials
+      </div>
+      <div class="compare-cell">
+        <span style="color:var(--accent);">Less prone to locking</span>, but enhanced formulations (EAS, reduced integration) help further
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Computational Cost Summary</div>
+    <table>
+      <tr><th>Operation</th><th>CST</th><th>Q4</th><th>DEM (N particles)</th></tr>
+      <tr><td>Stiffness per element</td><td>O(1)</td><td>O(ng) ng=gauss pts</td><td>N/A</td></tr>
+      <tr><td>Contact detection</td><td>N/A</td><td>N/A</td><td>O(N²) naive, O(N) with grid</td></tr>
+      <tr><td>System solve</td><td>O(n³) dense, O(n·bw²) banded</td><td>O(n·bw²)</td><td>N/A (explicit)</td></tr>
+      <tr><td>Time step constraint</td><td>CFL for dynamics</td><td>CFL for dynamics</td><td>dt &lt; 2/ωmax always</td></tr>
+      <tr><td>Memory</td><td>Sparse K matrix</td><td>Larger sparse K</td><td>O(N) particle arrays</td></tr>
+    </table>
+  </div>
+</div>
+</div><!-- end .content -->
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${id}')"]`).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if (id === 'cst') drawCST();
+  if (id === 'quad') drawQuad();
+}
+
+// CST Diagram
+function drawCST() {
+  const c = document.getElementById('cst-canvas');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.fillStyle = '#0a0c10';
+  ctx.fillRect(0,0,c.width,c.height);
+
+  const pts = [{x:60,y:180},{x:280,y:190},{x:180,y:50}];
+  const labels = ['1 (x₁,y₁)','2 (x₂,y₂)','3 (x₃,y₃)'];
+  const lblOffset = [{x:-15,y:16},{x:8,y:16},{x:5,y:-10}];
+
+  // Fill triangle
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x,pts[0].y);
+  pts.forEach(p=>ctx.lineTo(p.x,p.y));
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(74,222,128,0.06)';
+  ctx.fill();
+
+  // Edges
+  ctx.strokeStyle = 'rgba(74,222,128,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x,pts[0].y);
+  pts.forEach(p=>ctx.lineTo(p.x,p.y));
+  ctx.closePath();
+  ctx.stroke();
+
+  // DOF arrows at each node
+  const arrowLen = 22;
+  pts.forEach((p,i) => {
+    // u arrow (x)
+    ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+arrowLen,p.y); ctx.stroke();
+    ctx.fillStyle = '#60a5fa'; ctx.font='10px IBM Plex Mono';
+    ctx.fillText('u',p.x+arrowLen+2,p.y+4);
+    // v arrow (y)
+    ctx.strokeStyle = '#4ade80';
+    ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x,p.y-arrowLen); ctx.stroke();
+    ctx.fillStyle = '#4ade80';
+    ctx.fillText('v',p.x-12,p.y-arrowLen-2);
+  });
+
+  // Nodes
+  pts.forEach((p,i) => {
+    ctx.beginPath(); ctx.arc(p.x,p.y,6,0,2*Math.PI);
+    ctx.fillStyle = '#4ade80'; ctx.fill();
+    ctx.strokeStyle='#0a0c10'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.font='11px IBM Plex Mono';
+    ctx.fillText(labels[i], p.x+lblOffset[i].x, p.y+lblOffset[i].y);
+  });
+
+  // Centroid marker
+  const cx = (pts[0].x+pts[1].x+pts[2].x)/3;
+  const cy = (pts[0].y+pts[1].y+pts[2].y)/3;
+  ctx.beginPath(); ctx.arc(cx,cy,4,0,2*Math.PI);
+  ctx.fillStyle='rgba(245,158,11,0.7)'; ctx.fill();
+  ctx.fillStyle='#f59e0b'; ctx.font='10px IBM Plex Mono';
+  ctx.fillText('Area A', cx+8, cy+4);
+
+  // Edge labels
+  ctx.fillStyle='#8892a4'; ctx.font='10px IBM Plex Mono';
+  ctx.fillText('L₁₂', (pts[0].x+pts[1].x)/2, (pts[0].y+pts[1].y)/2+14);
+  ctx.fillText('L₂₃', (pts[1].x+pts[2].x)/2+8, (pts[1].y+pts[2].y)/2);
+  ctx.fillText('L₁₃', (pts[0].x+pts[2].x)/2-28, (pts[0].y+pts[2].y)/2);
+}
+
+// Q4 Diagram
+function drawQuad() {
+  const c = document.getElementById('quad-canvas');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.fillStyle='#0a0c10'; ctx.fillRect(0,0,c.width,c.height);
+
+  // Parent element (left)
+  const parents = [{x:50,y:170},{x:130,y:170},{x:130,y:80},{x:50,y:80}];
+  const pLabels = ['(-1,-1)','(+1,-1)','(+1,+1)','(-1,+1)'];
+  const pOff = [{x:-2,y:14},{x:4,y:14},{x:4,y:-6},{x:-36,y:-6}];
+
+  ctx.strokeStyle='rgba(96,165,250,0.5)'; ctx.lineWidth=1.5;
+  ctx.fillStyle='rgba(96,165,250,0.06)';
+  ctx.beginPath(); parents.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  parents.forEach((p,i)=>{
+    ctx.beginPath(); ctx.arc(p.x,p.y,5,0,2*Math.PI);
+    ctx.fillStyle='#60a5fa'; ctx.fill();
+    ctx.fillStyle='#8892a4'; ctx.font='9px IBM Plex Mono';
+    ctx.fillText(pLabels[i],p.x+pOff[i].x,p.y+pOff[i].y);
+  });
+  ctx.fillStyle='#60a5fa'; ctx.font='11px IBM Plex Mono';
+  ctx.fillText('ξ,η space',55,205);
+  ctx.fillStyle='#8892a4'; ctx.font='10px IBM Plex Mono';
+  ctx.fillText('ξ→',145,128); ctx.fillText('↑η',83,68);
+
+  // Arrow
+  ctx.strokeStyle='rgba(245,158,11,0.7)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(165,125); ctx.lineTo(190,125); ctx.stroke();
+  ctx.fillStyle='#f59e0b'; ctx.font='10px IBM Plex Mono';
+  ctx.fillText('[J]',170,118);
+
+  // Physical element (right, distorted)
+  const phys = [{x:205,y:180},{x:300,y:190},{x:320,y:70},{x:210,y:60}];
+  const pnLabels = ['1','2','3','4'];
+  const pnOff = [{x:-10,y:14},{x:4,y:14},{x:4,y:-6},{x:-10,y:-6}];
+
+  ctx.strokeStyle='rgba(74,222,128,0.5)'; ctx.lineWidth=1.5;
+  ctx.fillStyle='rgba(74,222,128,0.06)';
+  ctx.beginPath(); phys.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  phys.forEach((p,i)=>{
+    ctx.beginPath(); ctx.arc(p.x,p.y,5,0,2*Math.PI);
+    ctx.fillStyle='#4ade80'; ctx.fill();
+    ctx.fillStyle='#e2e8f0'; ctx.font='10px IBM Plex Mono';
+    ctx.fillText(pnLabels[i],p.x+pnOff[i].x,p.y+pnOff[i].y);
+  });
+  ctx.fillStyle='#4ade80'; ctx.font='11px IBM Plex Mono';
+  ctx.fillText('x,y space',210,210);
+
+  // Gauss points
+  const gps = [{x:260,y:143},{x:274,y:143},{x:260,y:120},{x:274,y:120}];
+  gps.forEach(g => {
+    ctx.beginPath(); ctx.arc(g.x,g.y,3,0,2*Math.PI);
+    ctx.fillStyle='#f59e0b'; ctx.fill();
+  });
+  ctx.fillStyle='#f59e0b'; ctx.font='9px IBM Plex Mono';
+  ctx.fillText('Gauss pts',226,105);
+}
+
+// ===== DEM SIMULATION =====
+let demState = null;
+let demAnimId = null;
+let gravityOn = true;
+
+function initDEM() {
+  const N = 14;
+  const W = 680, H = 280;
+  const r = 14;
+  const particles = [];
+  for (let i=0; i<N; i++) {
+    particles.push({
+      x: r + Math.random()*(W-2*r),
+      y: r + Math.random()*(H*0.6),
+      vx: (Math.random()-0.5)*20,
+      vy: (Math.random()-0.5)*10,
+      r: r,
+      mass: 1.0,
+      color: `hsl(${150+i*17},65%,55%)`
+    });
+  }
+  demState = { particles, W, H, step: 0 };
+}
+
+function stepDEM() {
+  const {particles, W, H} = demState;
+  const dt = 0.015;
+  const kn = 3000, gamma = 60;
+  const g = gravityOn ? 280 : 0;
+
+  const forces = particles.map(()=>({fx:0, fy:0}));
+
+  // Gravity
+  particles.forEach((p,i) => { forces[i].fy += p.mass * g; });
+
+  // Particle-particle contact
+  for (let i=0; i<particles.length; i++) {
+    for (let j=i+1; j<particles.length; j++) {
+      const p=particles[i], q=particles[j];
+      const dx=q.x-p.x, dy=q.y-p.y;
+      const dist=Math.sqrt(dx*dx+dy*dy)||0.001;
+      const overlap=p.r+q.r-dist;
+      if (overlap>0) {
+        const nx=dx/dist, ny=dy/dist;
+        const dvx=q.vx-p.vx, dvy=q.vy-p.vy;
+        const vn=dvx*nx+dvy*ny;
+        const fmag = kn*overlap - gamma*vn;
+        forces[i].fx -= fmag*nx; forces[i].fy -= fmag*ny;
+        forces[j].fx += fmag*nx; forces[j].fy += fmag*ny;
+      }
+    }
+  }
+
+  // Wall contacts
+  particles.forEach((p,i) => {
+    // Bottom
+    if (p.y+p.r > H) { const ov=p.y+p.r-H; forces[i].fy -= kn*ov + gamma*p.vy; }
+    // Top
+    if (p.y-p.r < 0) { const ov=p.r-p.y; forces[i].fy += kn*ov - gamma*p.vy; }
+    // Left
+    if (p.x-p.r < 0) { const ov=p.r-p.x; forces[i].fx += kn*ov - gamma*p.vx; }
+    // Right
+    if (p.x+p.r > W) { const ov=p.x+p.r-W; forces[i].fx -= kn*ov + gamma*p.vx; }
+  });
+
+  // Integrate (Euler-Cromer)
+  particles.forEach((p,i) => {
+    p.vx += (forces[i].fx/p.mass)*dt;
+    p.vy += (forces[i].fy/p.mass)*dt;
+    p.x += p.vx*dt;
+    p.y += p.vy*dt;
+    // Clamp
+    p.x = Math.max(p.r, Math.min(W-p.r, p.x));
+    p.y = Math.max(p.r, Math.min(H-p.r, p.y));
+  });
+  demState.step++;
+}
+
+function drawDEM() {
+  const c = document.getElementById('dem-canvas');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const {particles, W, H} = demState;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#08090d';
+  ctx.fillRect(0,0,W,H);
+
+  // Draw contact lines
+  ctx.strokeStyle = 'rgba(245,158,11,0.3)'; ctx.lineWidth = 1;
+  for (let i=0;i<particles.length;i++) {
+    for (let j=i+1;j<particles.length;j++) {
+      const p=particles[i], q=particles[j];
+      const dx=q.x-p.x, dy=q.y-p.y;
+      if (Math.sqrt(dx*dx+dy*dy)<p.r+q.r+4) {
+        ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke();
+      }
+    }
+  }
+
+  // Draw particles
+  particles.forEach(p => {
+    const speed = Math.sqrt(p.vx*p.vx+p.vy*p.vy);
+    const alpha = Math.min(1, 0.3 + speed/200);
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,2*Math.PI);
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = alpha;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth=1;
+    ctx.stroke();
+    // Velocity vector
+    if (speed > 5) {
+      ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(p.x,p.y);
+      ctx.lineTo(p.x+p.vx*0.15, p.y+p.vy*0.15); ctx.stroke();
+    }
+  });
+
+  // Info overlay
+  ctx.fillStyle = 'rgba(74,222,128,0.6)'; ctx.font='11px IBM Plex Mono';
+  ctx.fillText(`Step: ${demState.step} | Particles: ${particles.length} | Gravity: ${gravityOn?'ON':'OFF'}`, 10, 18);
+}
+
+function demLoop() {
+  for (let i=0;i<3;i++) stepDEM();
+  drawDEM();
+  demAnimId = requestAnimationFrame(demLoop);
+}
+
+function resetDEM() {
+  if (demAnimId) cancelAnimationFrame(demAnimId);
+  initDEM();
+  demLoop();
+}
+
+function toggleGravity() { gravityOn = !gravityOn; }
+
+// Click to add particle
+document.addEventListener('DOMContentLoaded', () => {
+  const dc = document.getElementById('dem-canvas');
+  if (dc) {
+    dc.addEventListener('click', e => {
+      if (!demState) return;
+      const rect = dc.getBoundingClientRect();
+      const scaleX = 680 / rect.width;
+      const scaleY = 280 / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      demState.particles.push({
+        x, y, vx: (Math.random()-0.5)*40, vy: -80,
+        r: 14, mass: 1.0,
+        color: `hsl(${Math.random()*360},65%,55%)`
+      });
+    });
+  }
+  drawCST();
+  initDEM();
+  demLoop();
+});
+</script>
+</body>
+</html>
